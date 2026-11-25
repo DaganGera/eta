@@ -87,6 +87,37 @@ $ eta.py check 2 --done 6 --total 18
 remote/kaggle: 6/18 -> about 2h (1h50m-2h20m) more for this part (rate since the reading at 22:40)
 ```
 
+### CI example
+
+From the repository root, run the test suite as a CI job. A fresh ETA log makes the plan ID 1 for this example and keeps this run out of your usual history.
+
+```sh
+(
+  set -e
+  ETA_LOG=$(mktemp)
+  export ETA_LOG
+  trap 'rm -f "$ETA_LOG"' EXIT
+
+  python3 scripts/eta.py plan "CI tests" compute=1s-5s
+  python3 scripts/eta.py step 1 compute
+  python3 -m unittest discover -s tests
+  python3 scripts/eta.py done 1
+)
+```
+
+ETA output from one run, with test runner output omitted:
+
+```text
+#1 CI tests | now 07:12 EST
+compute  1s-5s       -> about 2s (1s-5s)           UNMEASURED GUESS, no history
+TOTAL about 2s (1s-5s) | finish around 07:12 EST
+#1 compute started 07:12
+#1 done in 0s, quoted about 2s (1s-5s): EARLY by 1s
+compute  0s vs raw 1s-5s
+```
+
+Clock times and durations will vary. A fast run can display `0s` because durations are rounded. If you use your usual log, use the ID printed by `plan` in the `step` and `done` commands. If the tests fail, the example exits before recording completion.
+
 ### How estimates are made tight
 
 - **A most likely time leads.** Each part gets one most likely value, and the range sits in brackets after it.
